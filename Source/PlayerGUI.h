@@ -46,7 +46,6 @@ private:
 	std::unique_ptr<juce::FileChooser> fileChooser;
 
 	// Event handlers
-
 	void buttonClicked(juce::Button* button) override;
 	void sliderValueChanged(juce::Slider* slider) override;
 
