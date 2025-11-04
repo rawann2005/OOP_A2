@@ -1,8 +1,10 @@
-﻿
-#include "PlayerGUI.h"
+﻿#include "PlayerGUI.h"
 
 PlayerGUI::PlayerGUI()
+    : formatManager()
 {
+  
+    formatManager.registerBasicFormats();
 
     for (auto* btn : { &loadButton, &playButton, &stopButton, &loopButton, &controlButton,
                        &setAButton, &setBButton, &clearLoopButton,
@@ -11,9 +13,7 @@ PlayerGUI::PlayerGUI()
     {
         addAndMakeVisible(btn);
         btn->addListener(this);
-
-
-        btn->setColour(juce::TextButton::buttonColourId, juce::Colours::lightgrey);
+        btn->setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
         btn->setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     }
 
@@ -22,6 +22,13 @@ PlayerGUI::PlayerGUI()
     volumeSlider.addListener(this);
     volumeSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 50, 20);
     addAndMakeVisible(volumeSlider);
+
+    speedSlider.setRange(0.5, 2.0, 0.1);
+    speedSlider.setValue(1.0);
+    speedSlider.addListener(this);
+    speedSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 50, 20);
+    speedSlider.setTextValueSuffix("x");
+    addAndMakeVisible(speedSlider);
 
     addAndMakeVisible(playlistBox);
     playlistBox.setRowHeight(25);
@@ -56,66 +63,156 @@ void PlayerGUI::releaseResources()
     playerAudio.releaseResources();
 }
 
+void PlayerGUI::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colours::darkgrey);
+
+   
+    g.setColour(juce::Colours::black);
+    g.setFont(juce::Font(20.0f, juce::Font::bold));
+    g.drawText("Audio Player", getLocalBounds().removeFromTop(40),
+        juce::Justification::centred, true);
+
+  
+    paintWaveform(g);
+
+    g.setColour(juce::Colour(0xff26c6da));
+    g.drawRect(getLocalBounds(), 1);
+}
+
+void PlayerGUI::paintWaveform(juce::Graphics& g)
+{
+    int waveformHeight = 150;
+    auto waveformArea = getLocalBounds().removeFromBottom(waveformHeight);
+
+    g.setColour(juce::Colours::black);
+    g.fillRect(waveformArea);
+
+   
+    if (thumbnail.getTotalLength() > 0.0 && currentFile.existsAsFile())
+    {
+        auto waveformDrawingArea = waveformArea.withTrimmedTop(25);
+
+        g.setColour(juce::Colours::greenyellow);
+        thumbnail.drawChannels(g, waveformDrawingArea, 0.0, thumbnail.getTotalLength(), 1.0f);
+
+        double audioPosition = playerAudio.getPosition();
+        double audioLength = playerAudio.getLength();
+
+        if (audioLength > 0.0)
+        {
+            float playheadPosition = (float)(audioPosition / audioLength) * waveformDrawingArea.getWidth();
+
+            g.setColour(juce::Colours::red);
+            g.drawLine(waveformDrawingArea.getX() + playheadPosition,
+                waveformDrawingArea.getY(),
+                waveformDrawingArea.getX() + playheadPosition,
+                waveformDrawingArea.getBottom(), 3.0f);
+
+
+        }
+    }
+   
+
+ 
+    g.setColour(juce::Colours::white);
+    g.drawRect(waveformArea, 1);
+
+    auto titleArea = waveformArea.withHeight(25);
+    g.setColour(juce::Colours::white);
+    g.setFont(juce::Font(14.0f, juce::Font::bold));
+    g.drawText("Waveform", titleArea, juce::Justification::centred);
+
+    
+    g.setColour(juce::Colours::darkgrey);
+    g.fillRect(titleArea);
+
+}
+void PlayerGUI::loadFileForWaveform(const juce::File& file)
+{
+    currentFile = file;
+
+   
+    thumbnail.reset(2, 44100);
+
+ 
+    auto* inputSource = new juce::FileInputSource(file);
+    thumbnail.setSource(inputSource);
+
+  
+    repaint();
+}
+
 void PlayerGUI::resized()
 {
     auto area = getLocalBounds();
-    area.removeFromTop(40); 
+    area.removeFromTop(40);
 
-    int y = 10; 
+    int y = 10;
     int x = 10;
-    int spacing = 10;
+    int spacing = 8;
     int buttonWidth = 80;
-    int buttonHeight = 30;
+    int buttonHeight = 28;
     int rowHeight = buttonHeight + spacing;
     int fullWidth = getWidth() - 20;
 
-  
+
     loadButton.setBounds(x, y, buttonWidth, buttonHeight);
-    playButton.setBounds(x + 90, y, buttonWidth, buttonHeight);
-    pauseButton.setBounds(x + 180, y, buttonWidth, buttonHeight);
-    stopButton.setBounds(x + 270, y, buttonWidth, buttonHeight);
-    y += rowHeight; 
-
-    goToStartButton.setBounds(x, y, buttonWidth, buttonHeight);
-    BackwardButton.setBounds(x + 90, y, 70, buttonHeight); 
-    ForwardButton.setBounds(x + 170, y, 70, buttonHeight); 
-    goToEndButton.setBounds(x + 250, y, buttonWidth, buttonHeight);
     y += rowHeight;
 
   
-    loopButton.setBounds(x, y, buttonWidth, buttonHeight);
-    setAButton.setBounds(x + 90, y, buttonWidth, buttonHeight);
-    setBButton.setBounds(x + 180, y, buttonWidth, buttonHeight);
-    clearLoopButton.setBounds(x + 270, y, 100, buttonHeight);
+    playButton.setBounds(x, y, buttonWidth, buttonHeight);
+    stopButton.setBounds(x + buttonWidth + spacing, y, buttonWidth, buttonHeight);
+    pauseButton.setBounds(x + (buttonWidth + spacing) * 2, y, buttonWidth, buttonHeight);
     y += rowHeight;
-
-
-    muteButton.setBounds(x, y, buttonWidth, buttonHeight);
-    controlButton.setBounds(x + 90, y, 110, buttonHeight);
-    y += rowHeight; 
-
-    playlistBox.setBounds(x, y, fullWidth, 120);
-    y += 125; 
 
    
-    volumeSlider.setBounds(x, y, fullWidth, 25);
-    y += 30; 
+    int seekButtonsWidth = 65;
+    goToStartButton.setBounds(x, y, buttonWidth, buttonHeight);
+    BackwardButton.setBounds(x + buttonWidth + spacing, y, seekButtonsWidth, buttonHeight);
+    ForwardButton.setBounds(x + buttonWidth + spacing * 2 + seekButtonsWidth, y, seekButtonsWidth, buttonHeight);
+    goToEndButton.setBounds(x + buttonWidth + spacing * 3 + seekButtonsWidth * 2, y, buttonWidth, buttonHeight);
+    y += rowHeight;
 
-    playerAudio.getPositionSlider()->setBounds(x, y, fullWidth, 40);
-    y += 45; 
+   
+    int sliderWidth = 150;
+    muteButton.setBounds(x, y, buttonWidth, buttonHeight);
+    loopButton.setBounds(x + buttonWidth + spacing, y, buttonWidth, buttonHeight);
+    speedSlider.setBounds(x + (buttonWidth + spacing) * 2, y, sliderWidth, buttonHeight);
+    y += rowHeight;
 
   
-    infolabel.setBounds(x, y, fullWidth, 30);
-    y += 30; 
-
-    
-    playerAudio.getCurrentTimeLabel()->setBounds(x, y, 80, 30);
-    playerAudio.getTotalTimeLabel()->setBounds(getWidth() - 90, y, 80, 30);
+    setAButton.setBounds(x, y, buttonWidth, buttonHeight);
+    setBButton.setBounds(x + buttonWidth + spacing, y, buttonWidth, buttonHeight);
+    clearLoopButton.setBounds(x + (buttonWidth + spacing) * 2, y, 90, buttonHeight);
+    y += rowHeight;
 
 
+    controlButton.setBounds(x, y, 110, buttonHeight);
+    y += rowHeight + 10;
+
+ 
+    playlistBox.setBounds(x, y, fullWidth, 80);
+    y += 85;
+
+    volumeSlider.setBounds(x, y, fullWidth, 25);
+    y += 30;
+
+    playerAudio.getPositionSlider()->setBounds(x, y, fullWidth, 35);
+    y += 40;
+
+    infolabel.setBounds(x, y, fullWidth, 25);
+    y += 30;
+
+   
+    playerAudio.getCurrentTimeLabel()->setBounds(x, y, 80, 20);
+    playerAudio.getTotalTimeLabel()->setBounds(getWidth() - x - 80, y, 80, 20);
+    y += 25;
+
+   
+    int waveformHeight = 150; 
+    auto waveformArea = juce::Rectangle<int>(x, y, fullWidth, waveformHeight);
 }
-
-
 void PlayerGUI::buttonClicked(juce::Button* button)
 {
     if (button == &loadButton)
@@ -136,7 +233,6 @@ void PlayerGUI::buttonClicked(juce::Button* button)
         playerAudio.setLooping(!currentLooping);
         loopButton.setButtonText(playerAudio.isLooping() ? "Loop ON" : "Loop OFF");
     }
-
     else if (button == &pauseButton)
     {
         playerAudio.pause();
@@ -166,7 +262,6 @@ void PlayerGUI::buttonClicked(juce::Button* button)
         }
         volumeSlider.setValue(isMuted ? 0.0f : lastVolume, juce::dontSendNotification);
     }
-
     else if (button == &controlButton)
     {
         bool shouldShow = !playerAudio.getPositionSlider()->isVisible();
@@ -197,7 +292,6 @@ void PlayerGUI::buttonClicked(juce::Button* button)
     }
 }
 
-
 void PlayerGUI::sliderValueChanged(juce::Slider* slider)
 {
     if (slider == &volumeSlider)
@@ -210,7 +304,12 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider)
             lastVolume = (float)volumeSlider.getValue();
         }
     }
+    else if (slider == &speedSlider)
+    {
+        playerAudio.setSpeed((float)speedSlider.getValue());
+    }
 }
+
 void PlayerGUI::loadMultipleFiles()
 {
     fileChooser = std::make_unique<juce::FileChooser>(
@@ -223,7 +322,8 @@ void PlayerGUI::loadMultipleFiles()
             juce::Array<juce::File> files = fc.getResults();
             if (files.isEmpty()) return;
 
-            
+            playlist.clear();
+
             for (auto f : files)
                 playlist.push_back(f);
 
@@ -233,10 +333,13 @@ void PlayerGUI::loadMultipleFiles()
             if (!playlist.empty())
             {
                 playerAudio.loadFile(playlist[0]);
+                loadFileForWaveform(playlist[0]); 
                 updateInfoLabel(playlist[0]);
+                repaint(); 
             }
         });
 }
+
 int PlayerGUI::getNumRows()
 {
     return (int)playlist.size();
@@ -256,10 +359,11 @@ void PlayerGUI::selectedRowsChanged(int lastRowSelected)
     if (lastRowSelected >= 0 && lastRowSelected < (int)playlist.size())
     {
         playerAudio.loadFile(playlist[lastRowSelected]);
+        loadFileForWaveform(playlist[lastRowSelected]);
         updateInfoLabel(playlist[lastRowSelected]);
+        repaint();
     }
 }
-
 
 void PlayerGUI::updateInfoLabel(const juce::File& file)
 {
@@ -276,27 +380,14 @@ void PlayerGUI::updateInfoLabel(const juce::File& file)
 
     infolabel.setText(text, juce::dontSendNotification);
 }
+
 void PlayerGUI::timerCallback()
 {
     playerAudio.checkForLoop();
+    repaint();
 }
 
-
-void PlayerGUI::paint(juce::Graphics& g)
-{
-
-    g.fillAll(juce::Colours::darkgrey);
-
-    g.setColour(juce::Colours::black);
-    g.setFont(juce::Font(20.0f, juce::Font::bold));
-    g.drawText("Audio Player", getLocalBounds().removeFromTop(40),
-        juce::Justification::centred, true);
-
-    g.setColour(juce::Colour(0xff26c6da));
-    g.drawRect(getLocalBounds(), 1);
-}
-
-juce::AudioTransportSource* PlayerGUI::getAudioSource()
+juce::AudioSource* PlayerGUI::getAudioSource()
 {
     return playerAudio.getAudioSource();
 }

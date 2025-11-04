@@ -1,6 +1,7 @@
 #include "PlayerAudio.h"
 
 PlayerAudio::PlayerAudio()
+    : resamplingSource(&transportSource, false) 
 {
     formatManager.registerBasicFormats();
     positionSlider.setRange(0.0, 100.0);
@@ -16,6 +17,8 @@ PlayerAudio::PlayerAudio()
     currentTimeLabel.setText("00:00", juce::dontSendNotification);
     totalTimeLabel.setText("00:00", juce::dontSendNotification);
 
+   
+    resamplingSource.setResamplingRatio(1.0);
 
     startTimer(100);
 }
@@ -27,17 +30,17 @@ PlayerAudio::~PlayerAudio()
 
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate)
 {
-    transportSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
+    resamplingSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
 }
 
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
 {
-    transportSource.getNextAudioBlock(bufferToFill);
+    resamplingSource.getNextAudioBlock(bufferToFill);
 }
 
 void PlayerAudio::releaseResources()
 {
-    transportSource.releaseResources();
+    resamplingSource.releaseResources();
 }
 
 bool PlayerAudio::loadFile(const juce::File& file)
@@ -51,43 +54,48 @@ bool PlayerAudio::loadFile(const juce::File& file)
         readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, true);
         transportSource.setSource(readerSource.get(), 0, nullptr, reader->sampleRate);
 
+        // إعادة تعيين السرعة عند تحميل ملف جديد
+        setSpeed(1.0f);
+
         auto meta = reader->metadataValues;
-        title    = meta.getValue("title", {});
-        artist   = meta.getValue("artist", {});
+        title = meta.getValue("title", {});
+        artist = meta.getValue("artist", {});
         filename = file.getFileName();
 
         positionSlider.setRange(0.0, getLength());
-        totalTimeLabel.setText(formatTime(getLength()), juce::dontSendNotification); //current time
+        totalTimeLabel.setText(formatTime(getLength()), juce::dontSendNotification);
 
         return true;
     }
     return false;
 }
+
 void PlayerAudio::play()
 {
     transportSource.start();
 }
+
 void PlayerAudio::pause()
 {
-
-	transportSource.stop();
-
+    transportSource.stop();
 }
+
 void PlayerAudio::stop()
 {
     transportSource.stop();
     transportSource.setPosition(0.0);
 }
+
 void PlayerAudio::goToStart()
 {
-
-	transportSource.setPosition(0.0);
-
+    transportSource.setPosition(0.0);
 }
+
 void PlayerAudio::goToEnd() {
-	double length = transportSource.getLengthInSeconds();
-	transportSource.setPosition(length - 0.01);
+    double length = transportSource.getLengthInSeconds();
+    transportSource.setPosition(length - 0.01);
 }
+
 void PlayerAudio::setGain(float gain)
 {
     transportSource.setGain(gain);
@@ -107,18 +115,22 @@ double PlayerAudio::getLength() const
 {
     return transportSource.getLengthInSeconds();
 }
+
 juce::String PlayerAudio::getTitle() const
 {
-	return title;
+    return title;
 }
+
 juce::String PlayerAudio::getArtist() const
 {
-	return artist;
+    return artist;
 }
-juce::String PlayerAudio::getFilename( ) const 
+
+juce::String PlayerAudio::getFilename() const
 {
-	return filename; 
+    return filename;
 }
+
 void PlayerAudio::setLooping(bool shouldLoop)
 {
     looping = shouldLoop;
@@ -152,10 +164,8 @@ void PlayerAudio::timerCallback()
 {
     if (isAbLoopingActive == true)
     {
-
         if (getPosition() >= loopPointB)
         {
-
             setPosition(loopPointA);
         }
     }
@@ -222,20 +232,8 @@ void PlayerAudio::seekforward()
         setPosition(new_time);
 }
 
-/*void PlayerAudio::pause()
+void PlayerAudio::setSpeed(float newSpeed)
 {
-    transportSource.stop();
+    currentSpeed = newSpeed;
+    resamplingSource.setResamplingRatio(currentSpeed); 
 }
-
-void PlayerAudio::goToStart()
-{
-    transportSource.setPosition(0.0);
-}
-
-
-void PlayerAudio::goToEnd()
-{
-    double length = transportSource.getLengthInSeconds();
-    transportSource.setPosition(length - 0.01);
-}
-*/

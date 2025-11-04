@@ -36,39 +36,40 @@ public:
     juce::Slider* getPositionSlider() { return &positionSlider; }
     juce::Label* getCurrentTimeLabel() { return &currentTimeLabel; }
     juce::Label* getTotalTimeLabel() { return &totalTimeLabel; }
-    juce::TextButton* getShowControlsButton() { return &showControlsButton; }
 
-    juce::AudioTransportSource* getAudioSource() { return &transportSource; }
+    juce::AudioSource* getAudioSource() { return &resamplingSource; }
     void seekforward();
     void seekbackward();
 
-    juce::String getTitle( ) const;
+    juce::String getTitle() const;
     juce::String getArtist() const;
     juce::String getFilename() const;
+
+    void setSpeed(float newSpeed);
+    float getSpeed() const { return currentSpeed; }
 
 private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
+    juce::ResamplingAudioSource resamplingSource;
 
     juce::String title;
     juce::String artist;
     juce::String filename;
 
     bool looping = false;
+    float currentSpeed = 1.0f;
 
     juce::Slider positionSlider;
     juce::Label currentTimeLabel;
     juce::Label totalTimeLabel;
-    juce::TextButton showControlsButton;
-    bool controlsVisible = false;
 
     double loopPointA = -1.0;
     double loopPointB = -1.0;
     bool isAbLoopingActive = false;
 
     void sliderValueChanged(juce::Slider* slider) override;
-
     void timerCallback() override;
     juce::String formatTime(double seconds);
 

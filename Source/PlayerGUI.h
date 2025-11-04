@@ -13,63 +13,67 @@ public:
     ~PlayerGUI() override;
 
     void resized() override;
+    void paint(juce::Graphics& g) override;
 
     void prepareToPlay(int samplesPerBlockExpected, double sampleRate);
     void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill);
     void releaseResources();
-    void paint(juce::Graphics& g) override;
     void timerCallback() override;
 
-    juce::AudioTransportSource* getAudioSource();
+    juce::AudioSource* getAudioSource();
 
 private:
     PlayerAudio playerAudio;
+
 
     juce::TextButton loadButton{ "Load Files" };
     juce::TextButton playButton{ "Play" };
     juce::TextButton stopButton{ "Stop" };
     juce::TextButton loopButton{ "Loop" };
-
     juce::TextButton pauseButton{ "||" };
     juce::TextButton goToStartButton{ "<|" };
     juce::TextButton goToEndButton{ "|>" };
     juce::TextButton muteButton{ "Mute" };
-
     juce::TextButton controlButton{ "Show Controls" };
-
-
     juce::TextButton BackwardButton{ "<< 10s" };
     juce::TextButton ForwardButton{ ">> 10s" };
-
     juce::TextButton setAButton{ "Set A" };
     juce::TextButton setBButton{ "Set B" };
     juce::TextButton clearLoopButton{ "clear loop" };
 
     juce::Slider volumeSlider;
+    juce::Slider speedSlider;
 
     bool isMuted = false;
     float lastVolume = 0.5f;
 
-    // Metadata
     juce::Label infolabel;
 
-    // Playlist
-    juce::ListBox playlistBox{"PlayList", this};
+
+    juce::ListBox playlistBox{ "PlayList", this };
     std::vector<juce::File> playlist;
-  
-    //void loadTrack(const juce::File& file);
+
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    // ListBoxModel
+
+    juce::AudioThumbnailCache thumbnailCache{ 5 };
+    juce::AudioThumbnail thumbnail{ 512, formatManager, thumbnailCache };
+    juce::AudioFormatManager formatManager;
+
+    juce::File currentFile;
+    void paintWaveform(juce::Graphics& g);
+    void loadFileForWaveform(const juce::File& file);
+
+
     int getNumRows() override;
     void paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected) override;
     void selectedRowsChanged(int lastRowSelected) override;
 
-    // Event handlers
+
     void buttonClicked(juce::Button* button) override;
     void sliderValueChanged(juce::Slider* slider) override;
 
-    // Helpers
+
     void loadMultipleFiles();
     void updateInfoLabel(const juce::File& file);
 
