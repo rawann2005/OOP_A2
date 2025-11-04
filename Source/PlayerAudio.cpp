@@ -222,7 +222,7 @@ void PlayerAudio::seekforward()
         setPosition(new_time);
 }
 
-void PlayerAudio::pause()
+/*void PlayerAudio::pause()
 {
     transportSource.stop();
 }
@@ -238,3 +238,4 @@ void PlayerAudio::goToEnd()
     double length = transportSource.getLengthInSeconds();
     transportSource.setPosition(length - 0.01);
 }
+*/

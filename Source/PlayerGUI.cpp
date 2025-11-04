@@ -1,4 +1,4 @@
-
+﻿
 #include "PlayerGUI.h"
 
 PlayerGUI::PlayerGUI()
@@ -59,45 +59,61 @@ void PlayerGUI::releaseResources()
 void PlayerGUI::resized()
 {
     auto area = getLocalBounds();
-    area.removeFromTop(40);
+    area.removeFromTop(40); 
 
-    // Row 1: 
-    loadButton.setBounds(10, 50, 80, 30);
-    playButton.setBounds(100, 50, 80, 30);
-    pauseButton.setBounds(190, 50, 80, 30);
-    stopButton.setBounds(280, 50, 80, 30);
+    int y = 10; 
+    int x = 10;
+    int spacing = 10;
+    int buttonWidth = 80;
+    int buttonHeight = 30;
+    int rowHeight = buttonHeight + spacing;
+    int fullWidth = getWidth() - 20;
 
-    // Row 2:
-    goToStartButton.setBounds(10, 90, 80, 30);
-    BackwardButton.setBounds(100, 90, 70, 30);
-    ForwardButton.setBounds(180, 90, 70, 30);
-    goToEndButton.setBounds(260, 90, 80, 30);
+  
+    loadButton.setBounds(x, y, buttonWidth, buttonHeight);
+    playButton.setBounds(x + 90, y, buttonWidth, buttonHeight);
+    pauseButton.setBounds(x + 180, y, buttonWidth, buttonHeight);
+    stopButton.setBounds(x + 270, y, buttonWidth, buttonHeight);
+    y += rowHeight; 
 
-    // Row 3:
-    loopButton.setBounds(10, 130, 80, 30);
-    setAButton.setBounds(100, 130, 80, 30);
-    setBButton.setBounds(190, 130, 80, 30);
-    clearLoopButton.setBounds(280, 130, 100, 30);
+    goToStartButton.setBounds(x, y, buttonWidth, buttonHeight);
+    BackwardButton.setBounds(x + 90, y, 70, buttonHeight); 
+    ForwardButton.setBounds(x + 170, y, 70, buttonHeight); 
+    goToEndButton.setBounds(x + 250, y, buttonWidth, buttonHeight);
+    y += rowHeight;
 
-    // Row 4:
-    muteButton.setBounds(10, 170, 80, 30);
-    controlButton.setBounds(100, 170, 110, 30); 
+  
+    loopButton.setBounds(x, y, buttonWidth, buttonHeight);
+    setAButton.setBounds(x + 90, y, buttonWidth, buttonHeight);
+    setBButton.setBounds(x + 180, y, buttonWidth, buttonHeight);
+    clearLoopButton.setBounds(x + 270, y, 100, buttonHeight);
+    y += rowHeight;
+
+
+    muteButton.setBounds(x, y, buttonWidth, buttonHeight);
+    controlButton.setBounds(x + 90, y, 110, buttonHeight);
+    y += rowHeight; 
+
+    playlistBox.setBounds(x, y, fullWidth, 120);
+    y += 125; 
+
+   
+    volumeSlider.setBounds(x, y, fullWidth, 25);
+    y += 30; 
+
+    playerAudio.getPositionSlider()->setBounds(x, y, fullWidth, 40);
+    y += 45; 
+
+  
+    infolabel.setBounds(x, y, fullWidth, 30);
+    y += 30; 
+
     
-    // PlayList Box
-    playListBox.setBounds(10, 130, getWidth() - 20, 120);
-    
-    volumeSlider.setBounds(10, 210, getWidth() - 20, 25);
-
-    // InfoLabel
-    infoLabel.setBounds(10, 295, getWidth() - 20, 30);
-
-    playerAudio.getPositionSlider()->setBounds(10, 245, getWidth() - 20, 40);
+    playerAudio.getCurrentTimeLabel()->setBounds(x, y, 80, 30);
+    playerAudio.getTotalTimeLabel()->setBounds(getWidth() - 90, y, 80, 30);
 
 
-    playerAudio.getCurrentTimeLabel()->setBounds(10, 290, 80, 30);
-    playerAudio.getTotalTimeLabel()->setBounds(getWidth() - 90, 290, 80, 30);
 }
-
 
 
 void PlayerGUI::buttonClicked(juce::Button* button)
