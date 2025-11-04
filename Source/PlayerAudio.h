@@ -42,10 +42,18 @@ public:
     void seekforward();
     void seekbackward();
 
+    juce::String getTitle( ) const;
+    juce::String getArtist() const;
+    juce::String getFilename() const;
+
 private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
+
+    juce::String title;
+    juce::String artist;
+    juce::String filename;
 
     bool looping = false;
 
