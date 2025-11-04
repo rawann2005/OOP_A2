@@ -23,6 +23,14 @@ PlayerGUI::PlayerGUI()
     volumeSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 50, 20);
     addAndMakeVisible(volumeSlider);
 
+    addAndMakeVisible(playlistBox);
+    playlistBox.setRowHeight(25);
+    playlistBox.setColour(juce::ListBox::backgroundColourId, juce::Colours::darkgrey);
+
+    addAndMakeVisible(infolabel);
+    infolabel.setText("No file loaded", juce::dontSendNotification);
+    infolabel.setJustificationType(juce::Justification::centredLeft);
+
     addAndMakeVisible(playerAudio.getPositionSlider());
     addAndMakeVisible(playerAudio.getCurrentTimeLabel());
     addAndMakeVisible(playerAudio.getTotalTimeLabel());
@@ -73,10 +81,15 @@ void PlayerGUI::resized()
 
     // Row 4:
     muteButton.setBounds(10, 170, 80, 30);
-    controlButton.setBounds(100, 170, 110, 30);
-
-
+    controlButton.setBounds(100, 170, 110, 30); 
+    
+    // PlayList Box
+    playListBox.setBounds(10, 130, getWidth() - 20, 120);
+    
     volumeSlider.setBounds(10, 210, getWidth() - 20, 25);
+
+    // InfoLabel
+    infoLabel.setBounds(10, 295, getWidth() - 20, 30);
 
     playerAudio.getPositionSlider()->setBounds(10, 245, getWidth() - 20, 40);
 
@@ -91,17 +104,7 @@ void PlayerGUI::buttonClicked(juce::Button* button)
 {
     if (button == &loadButton)
     {
-        fileChooser = std::make_unique<juce::FileChooser>(
-            "Select an audio file...", juce::File{}, ".wav;.mp3;.aiff;.flac");
-
-        fileChooser->launchAsync(
-            juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-            [this](const juce::FileChooser& fc)
-            {
-                auto file = fc.getResult();
-                if (file.existsAsFile())
-                    playerAudio.loadFile(file);
-            });
+        loadMultipleFiles();
     }
     else if (button == &playButton)
     {
@@ -192,7 +195,71 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider)
         }
     }
 }
+void PlayerGUI::loadMultipleFiles()
+{
+    fileChooser = std::make_unique<juce::FileChooser>(
+        "Select audio files...", juce::File{}, "*.wav;*.mp3;*.aiff;*.flac");
 
+    fileChooser->launchAsync(
+        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectMultipleItems,
+        [this](const juce::FileChooser& fc)
+        {
+            juce::Array<juce::File> files = fc.getResults();
+            if (files.isEmpty()) return;
+
+            
+            for (auto f : files)
+                playlist.push_back(f);
+
+            playlistBox.updateContent();
+            playlistBox.repaint();
+
+            if (!playlist.empty())
+            {
+                playerAudio.loadFile(playlist[0]);
+                updateInfoLabel(playlist[0]);
+            }
+        });
+}
+int PlayerGUI::getNumRows()
+{
+    return (int)playlist.size();
+}
+
+void PlayerGUI::paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected)
+{
+    if (rowNumber < 0 || rowNumber >= (int)playlist.size()) return;
+
+    g.fillAll(rowIsSelected ? juce::Colours::orange : juce::Colours::darkgrey);
+    g.setColour(juce::Colours::white);
+    g.drawText(playlist[rowNumber].getFileName(), 5, 0, width - 10, height, juce::Justification::centredLeft);
+}
+
+void PlayerGUI::selectedRowsChanged(int lastRowSelected)
+{
+    if (lastRowSelected >= 0 && lastRowSelected < (int)playlist.size())
+    {
+        playerAudio.loadFile(playlist[lastRowSelected]);
+        updateInfoLabel(playlist[lastRowSelected]);
+    }
+}
+
+
+void PlayerGUI::updateInfoLabel(const juce::File& file)
+{
+    juce::String title = playerAudio.getTitle();
+    juce::String artist = playerAudio.getArtist();
+    juce::String name = file.getFileName();
+    double dur = playerAudio.getLength();
+
+    juce::String text;
+    if (title.isNotEmpty() || artist.isNotEmpty())
+        text = "Title: " + title + " | Artist: " + artist + " | Duration: " + juce::String(dur, 2) + " s";
+    else
+        text = name + " (" + juce::String(dur, 2) + " s)";
+
+    infolabel.setText(text, juce::dontSendNotification);
+}
 void PlayerGUI::timerCallback()
 {
     playerAudio.checkForLoop();
