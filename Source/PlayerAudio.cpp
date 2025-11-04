@@ -51,6 +51,11 @@ bool PlayerAudio::loadFile(const juce::File& file)
         readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, true);
         transportSource.setSource(readerSource.get(), 0, nullptr, reader->sampleRate);
 
+        auto meta = reader->metadataValues;
+        title    = meta.getValue("title", {});
+        artist   = meta.getValue("artist", {});
+        filename = file.getFileName();
+
         positionSlider.setRange(0.0, getLength());
         totalTimeLabel.setText(formatTime(getLength()), juce::dontSendNotification); //current time
 
@@ -62,13 +67,27 @@ void PlayerAudio::play()
 {
     transportSource.start();
 }
+void PlayerAudio::pause()
+{
 
+	transportSource.stop();
+
+}
 void PlayerAudio::stop()
 {
     transportSource.stop();
     transportSource.setPosition(0.0);
 }
+void PlayerAudio::goToStart()
+{
 
+	transportSource.setPosition(0.0);
+
+}
+void PlayerAudio::goToEnd() {
+	double length = transportSource.getLengthInSeconds();
+	transportSource.setPosition(length - 0.01);
+}
 void PlayerAudio::setGain(float gain)
 {
     transportSource.setGain(gain);
@@ -88,7 +107,18 @@ double PlayerAudio::getLength() const
 {
     return transportSource.getLengthInSeconds();
 }
-
+juce::String PlayerAudio::getTitle() const
+{
+	return title;
+}
+juce::String PlayerAudio::getArtist() const
+{
+	return artist;
+}
+juce::String PlayerAudio::getFilename( ) const 
+{
+	return filename; 
+}
 void PlayerAudio::setLooping(bool shouldLoop)
 {
     looping = shouldLoop;
