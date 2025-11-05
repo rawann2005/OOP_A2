@@ -322,7 +322,6 @@ void PlayerGUI::loadMultipleFiles()
             juce::Array<juce::File> files = fc.getResults();
             if (files.isEmpty()) return;
 
-            playlist.clear();
 
             for (auto f : files)
                 playlist.push_back(f);
@@ -333,9 +332,7 @@ void PlayerGUI::loadMultipleFiles()
             if (!playlist.empty())
             {
                 playerAudio.loadFile(playlist[0]);
-                loadFileForWaveform(playlist[0]); 
                 updateInfoLabel(playlist[0]);
-                repaint(); 
             }
         });
 }
