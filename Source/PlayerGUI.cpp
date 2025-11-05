@@ -332,7 +332,9 @@ void PlayerGUI::loadMultipleFiles()
             if (!playlist.empty())
             {
                 playerAudio.loadFile(playlist[0]);
+                loadFileForWaveform(playlist[0]);
                 updateInfoLabel(playlist[0]);
+                repaint();
             }
         });
 }
